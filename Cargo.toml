@@ -3,6 +3,14 @@ name = "creative_zone_builder"
 version = "1.0.0"
 authors = ["hardliner66 <hardliner66@gmail.com>"]
 edition = "2018"
+readme = "README.md"
+description = "A small to to generate a datapack, which creates a creative zone in minecraft."
+license = "MIT"
+license-file = "LICENSE"
+categories = ["games", "command-line-utilities"]
+
+[badges]
+maintenance = {status = "as-is"}
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
