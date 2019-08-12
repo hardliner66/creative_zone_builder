@@ -1,6 +1,6 @@
 [package]
 name = "creative_zone_builder"
-version = "1.1.0"
+version = "1.1.1"
 authors = ["hardliner66 <hardliner66@gmail.com>"]
 edition = "2018"
 readme = "README.md"
@@ -17,4 +17,5 @@ maintenance = {status = "as-is"}
 rust-embed = "5.1.0"
 zip = "0.5.2"
 
-clap = "2.33.0"
+# TODO: return to cargo version once this gets pulled in
+clap = { git = "https://github.com/Morganamilo/clap", branch="fix-default-usage" }
