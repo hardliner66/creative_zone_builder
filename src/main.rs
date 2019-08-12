@@ -14,17 +14,15 @@ use zip::ZipWriter;
 struct Asset;
 
 const DEFAULT_R: u16 = 300;
-const DEFAULT_WZ: u16 = 10;
 const DEFAULT_TZ: u16 = 100;
 const DEFAULT_OUT_FILE: &str = "creative_zone.zip";
 
 fn main() {
     let default_r_string = format!("{}", DEFAULT_R);
     let default_tz_string = format!("{}", DEFAULT_TZ);
-    let default_wz_string = format!("{}", DEFAULT_WZ);
 
     let matches = App::new("Creative Zone Builder")
-        .version("1.1.0")
+        .version("1.1.2")
         .setting(AppSettings::AllowNegativeNumbers)
         .setting(AppSettings::DeriveDisplayOrder)
         .about("Create a custom datapack for a creative zone in minecraft.")
@@ -42,13 +40,6 @@ fn main() {
             .takes_value(true)
             .default_value(&default_tz_string)
             .display_order(1))
-        .arg(Arg::with_name("wz")
-            .help("The width of the warning zone")
-            .short("w")
-            .long("warning-zone-width")
-            .takes_value(true)
-            .default_value(&default_wz_string)
-            .display_order(2))
         .arg(Arg::with_name("x")
             .help("The x position of the creative zone.")
             .required(true))
@@ -65,15 +56,10 @@ fn main() {
     let z = matches.value_of("z").expect("Z coordinate is missing!").parse().expect("Invalid value for Z coordinate!");
 
     let mut r = matches.value_of("r").unwrap_or(&default_r_string).parse().expect("Invalid value for radius!");
-    let mut wz = matches.value_of("wz").unwrap_or(&default_wz_string).parse().expect("Invalid value for warning zone width!");
     let mut tz = matches.value_of("tz").unwrap_or(&default_tz_string).parse().expect("Invalid value for teleport zone width!");
 
     if tz == 0 {
         tz = DEFAULT_TZ;
-    }
-
-    if wz == 0 {
-        wz = DEFAULT_WZ;
     }
 
     if r == 0 {
@@ -84,16 +70,14 @@ fn main() {
 
     println!("Creating creative zone at [x: {}, y: {}, z: {}]!", x, y, z);
     println!("Teleport zone starts at radius {} and ends at radius {}.", r, ro);
-    println!("Inner warning zone starts at radius {} and ends at radius {}", r - wz, r);
-    println!("Outer warning zone starts at radius {} and ends at radius {}", ro, ro + wz);
 
     let mut file = File::create(DEFAULT_OUT_FILE).expect("Couldn't create file!");
-    create_zip_archive(&mut file, x, y, z, r as i32, ro as i32, wz as i32).expect("Couldn't create archive");
+    create_zip_archive(&mut file, x, y, z, r as i32, ro as i32).expect("Couldn't create archive");
 
     println!("Written datapack to file: {}", DEFAULT_OUT_FILE);
 }
 
-fn create_zip_archive<T: Seek + Write>(buf: &mut T, x: i32, y: i32, z: i32, r: i32, ro: i32, wz: i32) -> ZipResult<()> {
+fn create_zip_archive<T: Seek + Write>(buf: &mut T, x: i32, y: i32, z: i32, r: i32, ro: i32) -> ZipResult<()> {
     let mut writer = ZipWriter::new(buf);
     for file in Asset::iter() {
         writer.start_file(&file.to_string(), FileOptions::default())?;
@@ -102,9 +86,7 @@ fn create_zip_archive<T: Seek + Write>(buf: &mut T, x: i32, y: i32, z: i32, r: i
         content = content.replace("||Y_POS||", &format!("{}", y));
         content = content.replace("||Z_POS||", &format!("{}", z));
         content = content.replace("||RADIUS||", &format!("{}", r));
-        content = content.replace("||WARNING_RADIUS||", &format!("{}", r - wz));
         content = content.replace("||RADIUS_OUTER||", &format!("{}", ro));
-        content = content.replace("||WARNING_RADIUS_OUTER||", &format!("{}", ro + wz));
         writer.write(content.as_bytes())?;
     }
     writer.finish()?;

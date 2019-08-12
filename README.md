@@ -44,7 +44,6 @@ FLAGS:
 OPTIONS:
     -r, --radius <r>                  The radius of the creative zone [default: 300]
     -t, --teleport-zone-width <tz>    The width of the teleport zone [default: 100]
-    -w, --warning-zone-width <wz>     The width of the warning zone [default: 5]
 
 ARGS:
     <x>    The x position of the creative zone.
