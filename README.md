@@ -55,12 +55,12 @@ ARGS:
 ## Example
 ### Creating the zone at X: 29999250, Z:0
 
-Teleport to the coordinates to find out the best Z coordinate:
+Teleport to the coordinates to find out the best Y coordinate:
 ```
 /tp 29999250 127 0
 ```
 
-If you have chosen a Z coordinate (I will use z = 74 in this example), you can create the datapack with the following comand:
+If you have chosen a Y coordinate (I will use y = 74 in this example), you can create the datapack with the following comand:
 ```
 creative_zone_builder 29999250 74 0
 ```
