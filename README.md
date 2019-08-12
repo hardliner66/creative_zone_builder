@@ -1,6 +1,10 @@
 # Creative Zone Builder
 A small tool to generate a datapack, which creates a creative zone in minecraft.
 
+## Cargo
+The cargo version of this crate currently is on a separate branch than the github release, because the github release uses a git dependency (clap) which cannot be deployed with cargo.
+Once https://github.com/clap-rs/clap/pull/1428 gets merged, I will merge the two branches.
+
 ## Datapack Features
 ### General
 - Creates a zone at the given coordinates in which creative mode is enabled.
