@@ -17,5 +17,4 @@ maintenance = {status = "as-is"}
 rust-embed = "5.1.0"
 zip = "0.5.2"
 
-# TODO: return to cargo version once this gets pulled in
-clap = { git = "https://github.com/Morganamilo/clap", branch="fix-default-usage" }
+clap = "2.33.0"
