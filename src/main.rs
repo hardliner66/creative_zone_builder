@@ -4,7 +4,7 @@ extern crate rust_embed;
 use std::fs::File;
 use std::io::{Seek, Write};
 
-use argparse::{ArgumentParser, Store};
+use clap::{App, AppSettings, Arg};
 use zip::result::ZipResult;
 use zip::write::FileOptions;
 use zip::ZipWriter;
@@ -13,48 +13,87 @@ use zip::ZipWriter;
 #[folder = "datapack"]
 struct Asset;
 
-const DEFAULT_X: i32 = 20000;
-const DEFAULT_Y: i32 = 100;
-const DEFAULT_Z: i32 = 1000;
-const DEFAULT_R: i32 = 300;
+const DEFAULT_R: u16 = 300;
+const DEFAULT_WZ: u16 = 10;
+const DEFAULT_TZ: u16 = 100;
 const DEFAULT_OUT_FILE: &str = "creative_zone.zip";
 
 fn main() {
-    let mut x = DEFAULT_X;
-    let mut y = DEFAULT_Y;
-    let mut z = DEFAULT_Z;
-    let mut r = DEFAULT_R;
+    let default_r_string = format!("{}", DEFAULT_R);
+    let default_tz_string = format!("{}", DEFAULT_TZ);
+    let default_wz_string = format!("{}", DEFAULT_WZ);
 
-    let help_x = format!("The x position of the creative zone. [Default: {}]", DEFAULT_X);
-    let help_y = format!("The y position of the creative zone. [Default: {}]", DEFAULT_Y);
-    let help_z = format!("The z position of the creative zone. [Default: {}]", DEFAULT_Z);
-    let help_r = format!("The radius of the creative zone. [Default: {}]", DEFAULT_R);
+    let matches = App::new("Creative Zone Builder")
+        .version("1.1.0")
+        .setting(AppSettings::AllowNegativeNumbers)
+        .setting(AppSettings::DeriveDisplayOrder)
+        .about("Create a custom datapack for a creative zone in minecraft.")
+        .arg(Arg::with_name("r")
+            .help("The radius of the creative zone")
+            .short("r")
+            .long("radius")
+            .takes_value(true)
+            .default_value(&default_r_string)
+            .display_order(0))
+        .arg(Arg::with_name("tz")
+            .help("The width of the teleport zone")
+            .short("t")
+            .long("teleport-zone-width")
+            .takes_value(true)
+            .default_value(&default_tz_string)
+            .display_order(1))
+        .arg(Arg::with_name("wz")
+            .help("The width of the warning zone")
+            .short("w")
+            .long("warning-zone-width")
+            .takes_value(true)
+            .default_value(&default_wz_string)
+            .display_order(2))
+        .arg(Arg::with_name("x")
+            .help("The x position of the creative zone.")
+            .required(true))
+        .arg(Arg::with_name("y")
+            .help("The y position of the creative zone.")
+            .required(true))
+        .arg(Arg::with_name("z")
+            .help("The z position of the creative zone.")
+            .required(true))
+        .get_matches();
 
-    {  // this block limits scope of borrows by ap.refer() method
-        let mut ap = ArgumentParser::new();
-        ap.set_description("Create a minecraft datapack for custom creative zone.");
-        ap.refer(&mut x)
-            .add_option(&["-x"], Store,
-                        &help_x);
-        ap.refer(&mut y)
-            .add_option(&["-y"], Store,
-                        &help_y);
-        ap.refer(&mut z)
-            .add_option(&["-z"], Store,
-                        &help_z);
-        ap.refer(&mut r)
-            .add_option(&["-r"], Store,
-                        &help_r);
-        ap.parse_args_or_exit();
+    let x = matches.value_of("x").expect("X coordinate is missing!").parse().expect("Invalid value for X coordinate!");
+    let y = matches.value_of("y").expect("Y coordinate is missing!").parse().expect("Invalid value for Y coordinate!");
+    let z = matches.value_of("z").expect("Z coordinate is missing!").parse().expect("Invalid value for Z coordinate!");
+
+    let mut r = matches.value_of("r").unwrap_or(&default_r_string).parse().expect("Invalid value for radius!");
+    let mut wz = matches.value_of("wz").unwrap_or(&default_wz_string).parse().expect("Invalid value for warning zone width!");
+    let mut tz = matches.value_of("tz").unwrap_or(&default_tz_string).parse().expect("Invalid value for teleport zone width!");
+
+    if tz == 0 {
+        tz = DEFAULT_TZ;
     }
 
-    let ro = r + 100;
+    if wz == 0 {
+        wz = DEFAULT_WZ;
+    }
+
+    if r == 0 {
+        r = DEFAULT_R;
+    }
+
+    let ro = r + tz;
+
+    println!("Creating creative zone at [x: {}, y: {}, z: {}]!", x, y, z);
+    println!("Teleport zone starts at radius {} and ends at radius {}.", r, ro);
+    println!("Inner warning zone starts at radius {} and ends at radius {}", r - wz, r);
+    println!("Outer warning zone starts at radius {} and ends at radius {}", ro, ro + wz);
 
     let mut file = File::create(DEFAULT_OUT_FILE).expect("Couldn't create file!");
-    create_zip_archive(&mut file, x, y, z, r, ro).expect("Couldn't create archive");
+    create_zip_archive(&mut file, x, y, z, r as i32, ro as i32, wz as i32).expect("Couldn't create archive");
+
+    println!("Written datapack to file: {}", DEFAULT_OUT_FILE);
 }
 
-fn create_zip_archive<T: Seek + Write>(buf: &mut T, x: i32, y: i32, z: i32, r: i32, ro: i32) -> ZipResult<()> {
+fn create_zip_archive<T: Seek + Write>(buf: &mut T, x: i32, y: i32, z: i32, r: i32, ro: i32, wz: i32) -> ZipResult<()> {
     let mut writer = ZipWriter::new(buf);
     for file in Asset::iter() {
         writer.start_file(&file.to_string(), FileOptions::default())?;
@@ -63,7 +102,9 @@ fn create_zip_archive<T: Seek + Write>(buf: &mut T, x: i32, y: i32, z: i32, r: i
         content = content.replace("||Y_POS||", &format!("{}", y));
         content = content.replace("||Z_POS||", &format!("{}", z));
         content = content.replace("||RADIUS||", &format!("{}", r));
+        content = content.replace("||WARNING_RADIUS||", &format!("{}", r - wz));
         content = content.replace("||RADIUS_OUTER||", &format!("{}", ro));
+        content = content.replace("||WARNING_RADIUS_OUTER||", &format!("{}", ro + wz));
         writer.write(content.as_bytes())?;
     }
     writer.finish()?;
